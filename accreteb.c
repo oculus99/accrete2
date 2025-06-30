@@ -5,7 +5,7 @@
 //
 // extended version of accrete "C" source code
 //
-// modified 2025.06.30 version number used here 0000.0000.0002
+// modified 2025.06.30 version number used here 0000.0000.0003
 //
 // based on
 //
@@ -58,9 +58,16 @@ double age = 4.5e9;
 double r_ecosphere = 1.0;
 int spin_resonance = 0;
 
+
+double gasdust=50; // same than K in original code
+double dust_density_coeff=2e-3;
+double alpha=5.0; // same than ALPHA
+double nanna=3.0; // same than N
+double bee=1.2e-5; //#define B			(1.2E-5)	
 double base_dust_limit=200;
 double base_innermost_planet=0.3;
-double base_stellar_mass_ratio=50.0; ## outermost planet is prop sqrt of this
+
+double base_stellar_mass_ratio=50.0; // outermost planet is prop sqrt of this
 double base_cloud_ecentricity=0.2;
 // simple migration: change distance of planet
 int use_migration = 0;  
@@ -293,8 +300,8 @@ dust_pointer dust_band;
 	  if (((last_mass < crit_mass) || (dust_band->gas_present == FALSE)))
 	       mass_density = temp_density;
 	  else
-	       mass_density = K * temp_density / (1.0 + sqrt(crit_mass / last_mass)
-						  * (K - 1.0));
+	       mass_density = gasdust * temp_density / (1.0 + sqrt(crit_mass / last_mass)
+						  * (gasdust - 1.0));
 	  if (((dust_band->outer_edge <= r_inner)
 	       || (dust_band->inner_edge >= r_outer)))
 	       return(collect_dust(last_mass,a,e,crit_mass, dust_band->next_band));
@@ -334,7 +341,7 @@ double orbital_radius, eccentricity, stellar_luminosity_ratio;
 
      perihelion_dist = (orbital_radius - orbital_radius * eccentricity);
      temp = perihelion_dist * sqrt(stellar_luminosity_ratio);
-     return(B * pow(temp,-0.75));
+     return(bee * pow(temp,-0.75));
 }
 
 
@@ -466,8 +473,8 @@ double stellar_mass_ratio, stellar_luminosity_ratio, inner_dust, outer_dust;
 #ifdef VERBOSE
 		    printf(".. Injecting protoplanet.\n");
 #endif
-		    dust_density = DUST_DENSITY_COEFF * sqrt(stellar_mass_ratio)
-			 * exp(-ALPHA * pow(a,(1.0 / N)));
+		    dust_density = dust_density_coeff * sqrt(stellar_mass_ratio)
+			 * exp(-alpha * pow(a,(1.0 / nanna)));
 		    crit_mass = critical_limit(a,e,stellar_luminosity_ratio);
 		    accrete_dust(&(mass),a,e,crit_mass,
 				 planetesimal_inner_bound,
@@ -1329,6 +1336,13 @@ int main(int argc, char *argv[]) {
             printf("\nUsage:\n");
             printf("  %s [-mass <value>] [-migrate] [-coeff <value>] [-ecosphere <value>]\n", argv[0]);
             printf("  -mass <value>      : Stellar mass ratio (double, default 1.0)\n");
+            printf("  -dust_density_coeff <value>      :  dust amount factor. Doles default 0.002 \n");
+            printf("  -gasdust <value>      : gas per dust, default 50. Sun maybe 70 \n"); 
+            printf("  -alpha <value>      : dust exp(-a) density by distance modifier , default 5\n"); 
+            printf("  -nanna <value>    : dust exp(-a) density by distance modifier , default 3\n"); 
+  
+            printf("  -innermost_planet <value>      : innermost planet, default 0.3 AU\n"); 
+            printf("  -disk_radius <value>      :  dust disk radius, default 50 AU\n");  
             printf("  -migrate           : Enable planetary migration (no argument needed)\n");
             printf("  -coeff <value>     : Migration coefficient (double, default 0.1)\n");
             printf("  -ecosphere <value> : Ecosphere radius (double, default 1.0)\n");
@@ -1407,10 +1421,60 @@ double base_innermost_planet=0.3;
             if (i + 1 < argc) {
                  base_innermost_planet= atof(argv[i+1]);
          
-                printf("innermost planet set to: %.2f\n",   base_innermost_planet);
+                printf("innermost planet is set to: %.2f\n",   base_innermost_planet);
                 i++;
             } else {
-                fprintf(stderr, "-innermost_planet equires a parameter value.\n");
+                fprintf(stderr, "-innermost_planet requires a parameter value.\n");
+       
+                return 1;
+            }
+        } 
+ 
+       else if (strcmp(argv[i], "-gasdust") == 0) {
+            if (i + 1 < argc) {
+                 gasdust= atof(argv[i+1]);
+         
+                printf("gas/dust ratio planet is set to: %.2f\n",   gasdust);
+                i++;
+            } else {
+                fprintf(stderr, "-gastdust equires a parameter value, tex -gasdust 50 .\n");
+       
+                return 1;
+            }
+        } 
+
+       else if (strcmp(argv[i], "-dust_density_coeff") == 0) {
+            if (i + 1 < argc) {
+                 dust_density_coeff= atof(argv[i+1]);
+         
+                printf("dust density coefficient is set to: %.2f\n",  dust_density_coeff);
+                i++;
+            } else {
+                fprintf(stderr, "-dust_density_coeff equires a parameter value, tex -dust_density_coeff 2e-3 .\n");
+       
+                return 1;
+            }
+        } 
+       else if (strcmp(argv[i], "-alpha") == 0) {
+            if (i + 1 < argc) {
+                 alpha= atof(argv[i+1]);
+         
+                printf("alpha is set to: %.2f\n", alpha);
+                i++;
+            } else {
+                fprintf(stderr, "-nanna equires a parameter value tex 5 .\n");
+       
+                return 1;
+            }
+        } 
+       else if (strcmp(argv[i], "-nanna") == 0) {
+            if (i + 1 < argc) {
+                 nanna= atof(argv[i+1]);
+         
+                printf("nanna is set to: %.2f\n", nanna);
+                i++;
+            } else {
+                fprintf(stderr, "-nanna equires a parameter value tex 3 .\n");
        
                 return 1;
             }
@@ -1425,8 +1489,8 @@ double base_innermost_planet=0.3;
     printf("\nUsed parameter values:\n");
     printf("  Random number seed:    %i   \n", seed1);
     printf("  Stellar Mass Ratio:    %.2f \n", stellar_mass_ratio);
-    printf("  Innermost planet:      %i   \n",  base_innermost_planet );
-    printf("  Disk radius :          %i   \n",  base_dust_limit );
+    printf("  Innermost planet:      %f   \n",  base_innermost_planet );
+    printf("  Disk radius :          %f   \n",  base_dust_limit );
 
     printf("  Use Migration:         %d\n", use_migration);
     printf("  Migration coefficient: %.2f\n", migration_coeff);
@@ -1674,7 +1738,7 @@ int generate_and_render_povray() {
 
     memset(buffu,0,256);
   sprintf( buffu ,"\"%d\" ", counter );
-  fprintf(fp_pov, buffu);
+  fprintf(fp_pov,"%s", buffu);
   fprintf(fp_pov, " 0.15,0 \n pigment {color rgb <1,1,1> }\n");
       fprintf(fp_pov, " translate y*-2.25 \n\n");
     fprintf(fp_pov, " translate x*%f \n\n", planet_x-0.25); // planet_x
