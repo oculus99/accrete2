@@ -5,7 +5,7 @@
 //
 // extended version of accrete "C" source code
 //
-// modified 2025.06.30 version number used here 0000.0000.0001
+// modified 2025.06.30 version number used here 0000.0000.0002
 //
 // based on
 //
@@ -60,7 +60,7 @@ int spin_resonance = 0;
 
 double base_dust_limit=200;
 double base_innermost_planet=0.3;
-double base_stellar_mass_ratio=50.0;
+double base_stellar_mass_ratio=50.0; ## outermost planet is prop sqrt of this
 double base_cloud_ecentricity=0.2;
 // simple migration: change distance of planet
 int use_migration = 0;  
@@ -1386,18 +1386,51 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         } 
-       else {
+/*
+double base_dust_limit=200;
+double base_innermost_planet=0.3;
+*/  
+        else if (strcmp(argv[i], "-disk_radius") == 0) {
+            if (i + 1 < argc) {
+                base_dust_limit= atof(argv[i+1]);
+         
+                printf("Disk radius set to: %.2f\n",  base_dust_limit);
+                i++;
+            } else {
+                fprintf(stderr, " -disk_radius requires a parameter value.\n");
+       
+                return 1;
+            }
+        } 
+
+        else if (strcmp(argv[i], "-innermost_planet") == 0) {
+            if (i + 1 < argc) {
+                 base_innermost_planet= atof(argv[i+1]);
+         
+                printf("innermost planet set to: %.2f\n",   base_innermost_planet);
+                i++;
+            } else {
+                fprintf(stderr, "-innermost_planet equires a parameter value.\n");
+       
+                return 1;
+            }
+        } 
+
+     else {
             fprintf(stderr, "Unknown parameter: %s. Use -h for help.\n", argv[i]);
             return 1; // Indicate an error
         }
     }
 
-    printf("\nFinal parameter values:\n");
-    printf("  Random number seed: %i \n", seed1);
-    printf("  Stellar Mass Ratio: %.2f\n", stellar_mass_ratio);
-    printf("  Use Migration: %d\n", use_migration);
-    printf("  Migration Coefficient: %.2f\n", migration_coeff);
-    printf("  Ecosphere Radius: %.2f\n", r_ecosphere);
+    printf("\nUsed parameter values:\n");
+    printf("  Random number seed:    %i   \n", seed1);
+    printf("  Stellar Mass Ratio:    %.2f \n", stellar_mass_ratio);
+    printf("  Innermost planet:      %i   \n",  base_innermost_planet );
+    printf("  Disk radius :          %i   \n",  base_dust_limit );
+
+    printf("  Use Migration:         %d\n", use_migration);
+    printf("  Migration coefficient: %.2f\n", migration_coeff);
+    printf("  Ecosphere radius:      %.2f\n", r_ecosphere);
    
 
       init( );
@@ -1644,7 +1677,7 @@ int generate_and_render_povray() {
   fprintf(fp_pov, buffu);
   fprintf(fp_pov, " 0.15,0 \n pigment {color rgb <1,1,1> }\n");
       fprintf(fp_pov, " translate y*-2.25 \n\n");
-  fprintf(fp_pov, " translate x*%f \n\n", planet_x-0.25); // planet_x
+    fprintf(fp_pov, " translate x*%f \n\n", planet_x-0.25); // planet_x
       fprintf(fp_pov, " }\n\n");
 
         counter++;
