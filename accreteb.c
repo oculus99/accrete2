@@ -1,13 +1,32 @@
 
-
-// modified 2025 06 30 v 0000.0000.0000
-
+////////////////////////////////////////////////////////////////////////////
+//
+// accrete planet system generator
+//
+// extended version of accrete "C" source code
+//
+// modified 2025.06.30 version number used here 0000.0000.0001
+//
+// based on
+//
+// "C version, by Matt Burdick, 1988. Most commonly distributed as accrete."
+//
+// https://znark.com/create/files/accrete.zip
+//
+// https://znark.com/create/accrete.html
+//
+//////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------*/
 /*                           BIBLIOGRAPHY                               */
 /*  Dole, Stephen H.  "Formation of Planetary Systems by Aggregation:   */
 /*      a Computer Simulation"  October 1969,  Rand Corporation Paper   */
 /*	P-4226.								*/
 /*----------------------------------------------------------------------*/
+
+//    Dole, Stephen H. "Computer Simulation of the Formation of Planetary Systems". Icarus, vol 13, pp 494-508, 1970.
+//    Isaacman, Richard. & Sagan, Carl. "Computer Simulation of Planetary Accretion Dynamics: Sensitivity to Initial Conditions". Icarus, vol 31, p 510, 1977.
+//    Fogg, Martyn J. "Extra-Solar Planetary Systems: A Microcomputer Simulation". Journal of the British // Interplanetary Society, vol 38, p 501-514, 1985.
+
 
 //
 // compilation with "accreteb.h" on linux gcc 
@@ -26,6 +45,11 @@
 
 
 double radians_per_rotation = 6.283185307179586;
+
+int seed1=777;
+
+int render=1;
+
 
 double stellar_mass_ratio = 1;
 double stellar_luminosity_ratio = 1.0;
@@ -1195,7 +1219,7 @@ int spin_resonance;
 
 void init()
 {
-     srand(25);
+  //   srand(25);
 }
 
 void generate_stellar_system()
@@ -1296,6 +1320,8 @@ int main(int argc, char *argv[]) {
   
     printf("Program name: %s\n", argv[0]);
 
+   
+
     // Loop through command-line arguments, starting from the second one (argv[0] is program name)
     for (int i = 1; i < argc; i++) {
         // Check for help options (-h or --help)
@@ -1347,23 +1373,41 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         }
-        else {
+        else if (strcmp(argv[i], "-seed") == 0) {
+            if (i + 1 < argc) {
+                seed1= atoi(argv[i+1]);
+                     srand(seed1);
+                printf(" Seed set to: %.2f\n", r_ecosphere);
+                i++;
+            } else {
+                fprintf(stderr, "Random seed\n");
+                srand(time(NULL)); 
+                //randomize();
+                return 1;
+            }
+        } 
+       else {
             fprintf(stderr, "Unknown parameter: %s. Use -h for help.\n", argv[i]);
             return 1; // Indicate an error
         }
     }
 
     printf("\nFinal parameter values:\n");
+    printf("  Random number seed: %i \n", seed1);
     printf("  Stellar Mass Ratio: %.2f\n", stellar_mass_ratio);
     printf("  Use Migration: %d\n", use_migration);
     printf("  Migration Coefficient: %.2f\n", migration_coeff);
     printf("  Ecosphere Radius: %.2f\n", r_ecosphere);
-     init( );
+   
+
+      init( );
      generate_stellar_system( );
 
-
-    generate_and_render_povray() ;
-    return 0; // Program executed successfully
+        if(render==1)
+        {
+            generate_and_render_povray() ;
+      }   
+ return 0; // Program executed successfully
 }
 
 int display_system(void)
@@ -1460,7 +1504,7 @@ int display_system(void)
 /* inner and outer bounds.                                              */
 /*----------------------------------------------------------------------*/
 
-#include <stdlib.h>
+
 
 
 double random_number(inner, outer)
@@ -1517,8 +1561,8 @@ int generate_and_render_povray() {
     // Camera setup (adjust position and look_at for best view)
     // Positioned to look down slightly on the orbital plane
     fprintf(fp_pov, "camera {\n");
-    fprintf(fp_pov, "  location <10, 0, -100> // x, y (up), z (depth)\n");
-    fprintf(fp_pov, "  look_at <10, 0, 0>\n");
+    fprintf(fp_pov, "  location <14, 0, -100> // x, y (up), z (depth)\n");
+    fprintf(fp_pov, "  look_at <14, 0, 0>\n");
     fprintf(fp_pov, "  right x * image_width / image_height\n");
     fprintf(fp_pov, "  angle 20 // Field of view\n");
     fprintf(fp_pov, "}\n\n");
@@ -1536,21 +1580,23 @@ int generate_and_render_povray() {
     // --- Central Star ---
     // Scale its radius based on stellar_mass_ratio or stellar_luminosity_ratio
     // For simplicity, let's use a fixed size that looks good with planets scaled below
-    double star_radius_pov = 2.0; // POV-Ray units
+    double star_radius_pov = 1.5; // POV-Ray units
     fprintf(fp_pov, "sphere {\n");
     fprintf(fp_pov, "  <0, 0, 0>, %f // Center and radius\n", star_radius_pov);
-    fprintf(fp_pov, "  pigment { color Yellow filter 0.5 } // Yellow, semi-transparent for glow effect\n");
+    fprintf(fp_pov, "  pigment { color <1,1,0.5> filter 0.5 } // Yellow, semi-transparent for glow effect\n");
     fprintf(fp_pov, "  // Add an emissive finish for a glowing effect\n");
     fprintf(fp_pov, "  finish { ambient 1 diffuse 0 emission 1 }\n");
     fprintf(fp_pov, "  // Add a halo for a more realistic star glow (requires photons in render settings)\n");
     // fprintf(fp_pov, "  photons { emission 1 }\n"); // Uncomment if you want to use photons for glow
     fprintf(fp_pov, "}\n\n");
 
+
     // --- Planets ---
     // Scale factor for planet radii and distances in POV-Ray units
     // Adjust these to make planets visible and to fit within the view
-    double planet_radius_scale = 0.00005; // 1 Km in simulation = 0.0005 POV-Ray units
-    double distance_scale = 5.0;        // 1 AU in simulation = 5.0 POV-Ray units
+    double planet_radius_scale = 0.004; // 1 Km in simulation = 0.0005 POV-Ray units
+    double distance_scale = 2.0;        // 1 AU in simulation = 5.0 POV-Ray units
+
 
     node1 = planet_head;
     counter = 1;
@@ -1558,11 +1604,14 @@ int generate_and_render_povray() {
         // Calculate planet position in POV-Ray coordinates
         // Simple circular orbit for visualization. For eccentricity, you'd need more complex math.
         // We'll place them along the X-axis for simplicity in this example.
-        double planet_x = node1->a * distance_scale;
-        double planet_y = 0.0; // Assume they are on the x-z plane (y=0)
+        //double planet_x =2+ log(node1->a) * distance_scale;
+      double planet_x =2+counter*distance_scale;  
+      double planet_y = 0.0; // Assume they are on the x-z plane (y=0)
         double planet_z = 0.0;
 
-        double planet_pov_radius = node1->radius * planet_radius_scale;
+        double planet_pov_radius = sqrt(node1->radius) * planet_radius_scale;
+      char buffu [256]="";
+   memset(buffu,0,256);
 
         fprintf(fp_pov, "// Planet #%d\n", counter);
         fprintf(fp_pov, "sphere {\n");
@@ -1570,7 +1619,7 @@ int generate_and_render_povray() {
                 planet_x, planet_y, planet_z, planet_pov_radius);
 
         if (node1->gas_giant) {
-            fprintf(fp_pov, "  pigment { color rgb <0.4, 0.6, 0.8> } // Blueish for gas giants\n");
+            fprintf(fp_pov, "  pigment { color rgb <0.4, 0.8, 0.6> } // Geenish for gas giants\n");
             fprintf(fp_pov, "  finish { phong 0.8 } // Shiny finish\n");
         } else {
             // Terrestrial planet coloring based on features (simplified)
@@ -1583,9 +1632,20 @@ int generate_and_render_povray() {
             } else {
                 fprintf(fp_pov, "  pigment { color rgb <0.7, 0.4, 0.2> } // Rocky/desert planet\n");
             }
-            fprintf(fp_pov, "  finish { phong 0.6 roughness 0.05 }\n"); // Less shiny, more diffuse
+            fprintf(fp_pov, "  finish { phong 0.6 roughness 0.05 ambient 0}\n"); // Less shiny, more diffuse
         }
         fprintf(fp_pov, "}\n\n");
+
+       fprintf(fp_pov, "text { \n\n");
+      fprintf(fp_pov, "ttf \"timrom.ttf\" ");
+
+    memset(buffu,0,256);
+  sprintf( buffu ,"\"%d\" ", counter );
+  fprintf(fp_pov, buffu);
+  fprintf(fp_pov, " 0.15,0 \n pigment {color rgb <1,1,1> }\n");
+      fprintf(fp_pov, " translate y*-2.25 \n\n");
+  fprintf(fp_pov, " translate x*%f \n\n", planet_x-0.25); // planet_x
+      fprintf(fp_pov, " }\n\n");
 
         counter++;
         node1 = node1->next_planet;
@@ -1596,12 +1656,13 @@ int generate_and_render_povray() {
 
     // --- Call POV-Ray to Render ---
     char command[512];
+    memset(command,0,512);
     // Adjust the path to povray.exe if it's not in your system's PATH
     // On Linux/macOS: "povray -W1200 -H400 +A +R -O%s %s"
     // On Windows: "pvengine /RENDER /EXIT /W1200 /H400 /O%s %s"
     // I'll use a generic command that works on many systems if 'povray' is in PATH.
     // Make sure to replace `povray` with `pvengine` if you're on Windows and it's not in your PATH.
-    sprintf(command, "/usr/bin/povray -W1200 -H400 +A +R -O%s %s", output_image_filename, pov_filename);
+    sprintf(command, "/usr/bin/povray -W1800 -H300 -O%s %s", output_image_filename, pov_filename);
 
     printf("Executing POV-Ray command: %s\n", command);
     int result = system(command);
